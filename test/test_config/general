@@ -1,0 +1,16 @@
+[a "bool"]
+	truish = true
+	falsy = false
+[an "int"]
+	zero = 0
+	one = 1
+	minusone = -1
+	ten = 10
+[a "string"]
+	hi = hello
+	withspaces = hello world
+[subsection "with space"]
+	name = hello world
+[multiple]
+	values = hello world
+	values = hello git
