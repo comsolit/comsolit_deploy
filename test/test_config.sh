@@ -50,7 +50,6 @@ testGetConfig() {
 
 testGetOldCheckouts() {
   local tmpdir
-  local oldCheckouts
   tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
 
   touch $tmpdir/1
@@ -75,7 +74,6 @@ testGetOldCheckouts() {
 
 testRemoveCheckouts() {
   local tmpdir
-  local oldCheckouts
   tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
 
   touch $tmpdir/1
@@ -90,6 +88,30 @@ testRemoveCheckouts() {
     "$(ls -1 $tmpdir)"
 }
 
+testSwitchSymlink() {
+  local tmpdir
+  local checkouts_dir
+  local a
+  local b
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  checkouts_dir=$tmpdir/checkouts
+  a=$checkouts_dir/2012-12-02
+  b=$checkouts_dir/2013-01-12
+
+  DEPLOY_ROOT=$tmpdir
+  mkdir -p $a
+  echo "a" > $a/sample
+  assertEquals "a" $(cat $a/sample)
+  mkdir -p $b
+  echo "b" > $b/sample
+  assertEquals "b" $(cat $b/sample)
+
+  switch_symlink $a
+  assertEquals "a" $(cat $DEPLOY_ROOT/current/sample)
+
+  switch_symlink $b
+  assertEquals "b" $(cat $DEPLOY_ROOT/current/sample)
+}
 
 # suite functions
 oneTimeSetUp()

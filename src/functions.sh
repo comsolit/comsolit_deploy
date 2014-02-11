@@ -84,3 +84,22 @@ remove_old_checkouts() {
     rm -rf ${checkouts_dir}/${checkout_dir}
   done
 }
+
+# return all but the most recent checkouts
+#
+# The function just uses standard ordering of the ls command to sort by date.
+#
+# Globals:
+#   DEPLOY_ROOT
+# Arguments:
+#   new_target
+# Returns:
+#   None
+switch_symlink() {
+  local new_target
+  new_target=$1
+  # update current symlink with mv to be atomic
+  # ln --force does two syscalls to unlink and to create
+  ln --symbolic --force --no-dereference "${new_target}" "${DEPLOY_ROOT}/current.new"
+  mv --force --no-target-directory "${DEPLOY_ROOT}/current.new" "${DEPLOY_ROOT}/current"
+}

@@ -65,32 +65,6 @@ relevant configuration in .deploy/repo.config:
   
   DATE=$(date +"%F_%H-%M-%S")
   
-  # This workaround is needed if git config does not know the --blob option
-  TMPCONFIG=$(tmpfile --directory deploy_config.XXXXXXXXXX)/config
-  git cat-file -p $BRANCH:.deploy/repo.config
-  
-  config_get() {
-    name=$1
-    get=$2 # or --get
-  # --blob option not available on Mittwald
-  #  git config --blob $BRANCH:.deploy/repo.config $get $name
-    git config --file ${TMPCONFIG} ${get} ${name}
-  }
-  
-  get_old_checkouts() {
-    checkouts_dir=$1
-    number_to_keep=$2
-    ls -1 ${checkouts_dir} | head --liness=-${number_to_keep}
-  }
-  
-  remove_old_checkouts() {
-    checkouts_dir=$1
-    number_to_keep=$2
-    for checkout_dir  in $(get_old_checkouts ${checkouts_dir} ${number_to_keep}); do
-      rm -rf ${checkouts_dir}/${checkout_dir}
-    done
-  }
-  
   run_hook() {
     hook=$1
     hook_path=CHECKOUT_DIR/.deploy/hooks/$hook
@@ -101,7 +75,6 @@ relevant configuration in .deploy/repo.config:
   }
   
   DEPLOY_ROOT=config_get deploy.root
-  DATE=
   SHA1=
   DESCRIBE=
   CHECKOUTS_DIR=$DEPLOY_ROOT/checkout
