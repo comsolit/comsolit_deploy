@@ -59,3 +59,28 @@ get_config() {
   _comsolit_deploy_get_git_config ${tmpfile} $@
   rm ${tmpfile}
 }
+
+# return all but the most recent checkouts
+#
+# The function just uses standard ordering of the ls command to sort by date.
+#
+# Globals:
+#   _None
+# Arguments:
+#   checkouts_dir
+#   number_to_keep
+# Returns:
+#   directory names
+get_old_checkouts() {
+  checkouts_dir=$1
+  number_to_keep=$2
+  ls -1 ${checkouts_dir} | head --lines=-${number_to_keep}
+}
+
+remove_old_checkouts() {
+  checkouts_dir=$1
+  number_to_keep=$2
+  for checkout_dir  in $(get_old_checkouts ${checkouts_dir} ${number_to_keep}); do
+    rm -rf ${checkouts_dir}/${checkout_dir}
+  done
+}

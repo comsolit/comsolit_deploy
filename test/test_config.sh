@@ -48,6 +48,49 @@ testGetConfig() {
   assertEquals "foo" "$(get_config sec.tion)"
 }
 
+testGetOldCheckouts() {
+  local tmpdir
+  local oldCheckouts
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+
+  touch $tmpdir/1
+  touch $tmpdir/2
+  touch $tmpdir/3
+  touch $tmpdir/4
+
+  assertEquals "1
+2
+3" \
+    "$(get_old_checkouts "$tmpdir" 1)"
+
+  assertEquals "1
+2" \
+    "$(get_old_checkouts "$tmpdir" 2)"
+
+  assertEquals "1" "$(get_old_checkouts "$tmpdir" 3)"
+  assertEquals "" "$(get_old_checkouts "$tmpdir" 4)"
+  assertEquals "" "$(get_old_checkouts "$tmpdir" 5)"
+  assertEquals "" "$(get_old_checkouts "$tmpdir" 6)"
+}
+
+testRemoveCheckouts() {
+  local tmpdir
+  local oldCheckouts
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+
+  touch $tmpdir/1
+  touch $tmpdir/2
+  touch $tmpdir/3
+  touch $tmpdir/4
+
+  remove_old_checkouts "$tmpdir" 2
+
+  assertEquals "3
+4" \
+    "$(ls -1 $tmpdir)"
+}
+
+
 # suite functions
 oneTimeSetUp()
 {
