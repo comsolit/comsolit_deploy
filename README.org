@@ -1,0 +1,261 @@
+*** workflow
+
+**** On Office Repo
+
+#+BEGIN_SRC sh
+  #!/bin/sh
+  
+  maybe_push_tag() {
+    local $branch
+    if require_tag $branch; then
+      if !has_tag $branch; then
+        die "Branch $branch requires a tag but does not have one."
+      fi
+      tag_regexp=tag_regexp_for_branch $branch
+      if tag_regexp; then
+        tag=get_tag_for_branch $branch
+        if !check_tag $tag_regexp $tag;then
+          die "Tag $tag for branch $branch is not valid: $tag_regexp"
+        fi
+      fi
+      push $tag
+    fi
+  
+  }
+  
+  push_branch() {
+  # TODO check whether force push is allowed
+  
+  }
+  
+  if only_fast_forward $BRANCH && !is_fast_forward $BRANCHM; then
+    die "only fast forward allowed for branch $BRANCH"
+  fi
+  
+  if should_deploy $BRANCH; then
+    maybe_push_tag $BRANCH
+    push branch $BRANCH
+  fi
+#+END_SRC
+
+relevant configuration in .deploy/repo.config:
+
+#+BEGIN_EXAMPLE
+  [branch "production"]
+    deploy = true
+    denyNonFastForwards = true
+
+  [branch "acceptance"]
+    deploy = true
+    denyNonFastForwards = false
+    requireTag = true
+    tagRegExp = SEMVER
+
+  [branch "development"]
+    deploy = true
+    denyNonFastForwards = true
+    requireTag = true
+    tagRegExp = SEMVERRC
+#+END_EXAMPLE
+
+**** on Hosting Server
+
+#+BEGIN_SRC sh
+  #!/bin/sh
+  
+  DATE=$(date +"%F_%H-%M-%S")
+  
+  # This workaround is needed if git config does not know the --blob option
+  TMPCONFIG=$(tmpfile --directory deploy_config.XXXXXXXXXX)/config
+  git cat-file -p $BRANCH:.deploy/repo.config
+  
+  config_get() {
+    name=$1
+    get=$2 # or --get
+  # --blob option not available on Mittwald
+  #  git config --blob $BRANCH:.deploy/repo.config $get $name
+    git config --file ${TMPCONFIG} ${get} ${name}
+  }
+  
+  get_old_checkouts() {
+    checkouts_dir=$1
+    number_to_keep=$2
+    ls -1 ${checkouts_dir} | head --liness=-${number_to_keep}
+  }
+  
+  remove_old_checkouts() {
+    checkouts_dir=$1
+    number_to_keep=$2
+    for checkout_dir  in $(get_old_checkouts ${checkouts_dir} ${number_to_keep}); do
+      rm -rf ${checkouts_dir}/${checkout_dir}
+    done
+  }
+  
+  run_hook() {
+    hook=$1
+    hook_path=CHECKOUT_DIR/.deploy/hooks/$hook
+    if [-x ${hook_path}];then
+      echo "call hook $hook with arguments $@"
+      ${hook_path} $@
+    fi
+  }
+  
+  DEPLOY_ROOT=config_get deploy.root
+  DATE=
+  SHA1=
+  DESCRIBE=
+  CHECKOUTS_DIR=$DEPLOY_ROOT/checkout
+  CHECKOUT_DIR=${CHECKOUTS_DIR}/${DATE}-${SHA1}-${DESCRIBE}
+  HOOKS=CHECKOUT_DIR/.deploy/hooks
+  
+  mkdir -p $DEPLOY_ROOT/$BRANCH
+  
+  export GIT_WORK_DIR=CHECKOUT_DIR
+  git checkout
+  cd checkout
+  
+  run_hook post-checkout ${DATE} ${SHA1} ${DESCRIBE}
+  
+  # TODO do database migrations here
+  
+  # update current symlink with mv to be atomic
+  ln --symbolic --force --no-dereference "${CHECKOUT_DIR}" "${DEPLOY_ROOT}/current.new"
+  mv "${DEPLOY_ROOT}/current.new" "${DEPLOY_ROOT}/current"
+  
+  run_hook post-switch
+  
+  remove_old_checkouts ${CHECKOUTS_DIR} 4
+#+END_SRC
+
+**** example typo3 deployment hook
+
+#+BEGIN_SRC sh
+T3VERSION=6.1.7
+T3BASE=../../typo3/${T3VERSION}
+
+ln -s T3BASE/index.php
+ln -s T3BASE/t3lib
+ln -s T3BASE/typo3
+
+ln -s ../../settings/localsettings.config typo3conf/localsettings.config
+ln -s ../../media typo3conf/fileadmin/media
+
+mkdir -p --mode=755 typo3temp
+#+END_SRC
+
+
+*** directory structure
+
+Inside the deployment target dir there is a folder for every deployed branch,
+like
+
+/path/to/deployment/target
+  /production
+  /acceptance
+  /testing
+
+The directory structure inside each deployed branch is
+
+  /symlinktargets
+  /checkouts
+    /$DATE-$SHA1[-$TAG]
+  /log/
+    $DATE-$PID.log
+
+
+
+*** typo3
+
+**** versioned typo3 link
+$GROUP_LINK_TARGET=$LINKTARGETS_VERSIONED/$VERSIONED_RESOURCE/$VERSION
+
+index.php -> $GROUP_LINK_TARGET/index.php
+t3lib     -> $GROUP_LINK_TARGET/t3lib
+typo3     -> $GROUP_LINK_TARGET/typo3
+
+**** configuration
+
+
+/linktargets_versioned
+  /typo3
+    /6.1.5
+    /6.1.6
+  /wordpress
+    /42
+
+
+
+
+*** comsolit_deploy_config
+git repositories contain deployment info files named
+.comsolit_deploy_config. This files are read with git config.
+
+
+http://unix.stackexchange.com/a/84935/16553
+git config --bool --file /tmp/works/gitconfigtest --get-regexp "^symlink\..*\.writable$" | sed -nr 's/^symlink.(.*).writable (true|false)$/\1/p'
+
+Example Deployment configuration file
+
+[symlink "index.php t3lib typo3"]
+# version implicates writable = false
+    version = 6.1.5
+    target = /provider/typo3installs
+
+
+[symlink "typo3conf/LocalConfiguration.php"]
+    writable = false
+# relative target values are relative to the symlinktargets folder
+    target =
+    flatten = true
+
+[symlink "fileadmin/website_files/media"]
+    writable = true
+    flatten = true
+
+[folders]
+    path = typo3conf
+    path = anotherpath
+
+
+
+
+*** comsolit_deploy_repo_config
+Another configuration file is on the deployment server, inside the target
+repo, named comsolit_deploy_repo_config.
+[target]
+    dir = /path/to/deployment/target
+
+[branch "production"]
+    tagpattern = ([[:digit:]]+\.)+[[:digit:]]+(\+rc[[:digit:]]+)?$
+
+[branch "acceptance"]
+# tagpattern requires +rcN suffix
+    tagpattern = SOME_COMPLICATE_PATTERN
+
+[branch "master"]
+# no tag required
+    tagpattern = 
+
+[branch "demo/*"]
+    force = true
+
+** other deployment tools
+
+*** yadt-project from immobilienscout 24
+http://yadt-project.org
+many levels to big
+*** https://github.com/git-deploy/git-deploy
+- booking.com
+- perl
+- seltsamer workflow, ausgehend von einem zentralen staging server
+*** giddyup
+https://github.com/mpalmer/giddyup web application deployment with "git push"
+(shell)
+
+
+*** EugeneKay
+https://github.com/EugeneKay/scripts/blob/master/bash/git-deploy-hook.sh
+- some nice preliminary checks for binaries
+
+* glosar
+-  [[http://en.wikipedia.org/wiki/Development,_testing,_acceptance_and_production][DTAP]] is short for Development, Testing, Acceptance and Production
