@@ -33,10 +33,19 @@ hello git" \
 
 testGitCatBlobToTmp() {
   local git_dir=test_config/cat_blob.git
-  local tmpfile="$(_comsolit_deploy_cat_blob_to_tmp $git_dir "master:catblob")"
+  local tmpfile
+  tmpfile="$(_comsolit_deploy_cat_blob_to_tmp $git_dir "master:catblob")"
 
   assertEquals "hello world!!" "$(cat $tmpfile)"
   rm $tmpfile
+}
+
+testGetConfig() {
+  # override global GIT_DIR
+  export GIT_DIR=test_config/cat_blob.git
+  _COMSOLIT_DEPLOY_CONFIG_BLOB="master:config"
+
+  assertEquals "foo" "$(get_config sec.tion)"
 }
 
 # suite functions

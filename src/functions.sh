@@ -42,9 +42,20 @@ _comsolit_deploy_cat_blob_to_tmp() {
 # under .deploy/config
 #
 # Globals:
+#   _COMSOLIT_DEPLOY_CONFIG_BLOB
 # Arguments:
+#   name
+#   get method (optional)
+#   type (optional)
 # Returns:
-#   None
+#   value of the requested git config name
 get_config() {
-  true
+  local git_dir
+  local tmpfile
+  local blob
+  git_dir="$(git rev-parse --git-dir)"
+  blob="${_COMSOLIT_DEPLOY_CONFIG_BLOB}"
+  tmpfile=$(_comsolit_deploy_cat_blob_to_tmp $git_dir $blob)
+  _comsolit_deploy_get_git_config ${tmpfile} $@
+  rm ${tmpfile}
 }
