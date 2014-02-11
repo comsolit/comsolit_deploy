@@ -1,4 +1,11 @@
 _COMSOLIT_DEPLOY_GIT=git
+_COMSOLIT_LOG_INFO=true
+
+log_info() {
+  if [ ! -z "$_COMSOLIT_LOG_INFO" ]; then
+    echo $1
+  fi
+}
 
 # Read config values from a config file with git-config
 #
@@ -102,4 +109,21 @@ switch_symlink() {
   # ln --force does two syscalls to unlink and to create
   ln --symbolic --force --no-dereference "${new_target}" "${DEPLOY_ROOT}/current.new"
   mv --force --no-target-directory "${DEPLOY_ROOT}/current.new" "${DEPLOY_ROOT}/current"
+}
+
+# run a hook script
+#
+# Globals:
+#   CHECKOUT_DIR
+# Arguments:
+#   hook: name of the hook
+# Returns:
+#   None
+run_hook() {
+  hook=$1
+  hook_path=${CHECKOUT_DIR}/.deploy/hooks/$hook
+  if [ -x "${hook_path}" ];then
+    log_info "call hook $hook with arguments $@"
+    ${hook_path} $@
+  fi
 }

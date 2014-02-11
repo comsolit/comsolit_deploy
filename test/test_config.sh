@@ -113,6 +113,43 @@ testSwitchSymlink() {
   assertEquals "b" $(cat $DEPLOY_ROOT/current/sample)
 }
 
+testRunHook() {
+  local tmpdir
+  local out
+  local hooksdir
+  local hook
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  hooksdir=$tmpdir/.deploy/hooks
+  hook=what-ever
+
+  CHECKOUT_DIR=$tmpdir
+  _COMSOLIT_LOG_INFO=true
+
+  out=$(run_hook $hook)
+  assertEquals "" "$out"
+
+  mkdir -p $hooksdir
+  out=$(run_hook $hook)
+  assertEquals "" "$out"
+
+  touch $hooksdir/$hook
+  out=$(run_hook $hook)
+  assertEquals "" "$out"
+
+  chmod a+x $hooksdir/$hook
+  out=$(run_hook $hook)
+  assertEquals "1" "$(echo $out|wc -l)"
+
+  echo "#!/bin/sh" >$hooksdir/$hook
+  out=$(run_hook $hook)
+  assertEquals "1" "$(echo $out|wc -l)"
+
+  _COMSOLIT_LOG_INFO=""
+  echo "echo washere" >>$hooksdir/$hook
+  out=$(run_hook $hook)
+  assertEquals "washere" "$out"
+}
+
 # suite functions
 oneTimeSetUp()
 {
