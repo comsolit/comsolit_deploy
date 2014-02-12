@@ -166,10 +166,43 @@ testDeploy() {
   assertEquals "${checkout_dir}" "$(ls -1 ${tmpdir}/checkouts)"
 }
 
+__feedback_testDeployWithHooks_post_checkout() {
+  echo "post-checkout"
+  echo $@
+}
+
+__feedback_testDeployWithHooks_post_switch() {
+  echo "post-switch"
+  echo $@
+}
+
+testDeployWithHooks() {
+  local tmpdir
+  local out
+
+  unset GIT_DIR
+  cd test_functions/with_hooks.git
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+
+  _COMSOLIT_LOG_INFO=""
+  _TEST_RUN_POST_CHECKOUT=__feedback_testDeployWithHooks_post_checkout
+  _TEST_RUN_POST_SWITCH=__feedback_testDeployWithHooks_post_switch
+  COMSOLIT_TIMESTAMP="1392211825"
+  out=$(deploy master "${tmpdir}")
+  assertEquals \
+    "post-checkout master fb458699833884586b31f0e76421386998258c5b 1.0+rc2-1-gfb45869
+post-switch master fb458699833884586b31f0e76421386998258c5b 1.0+rc2-1-gfb45869" \
+    "${out}"
+}
+
 # suite functions
 oneTimeSetUp()
 {
   th_oneTimeSetUp
+}
+
+setUp() {
+  cd "${TH_INITIAL_CURRENT_DIRECTORY}"
 }
 
 tearDown()

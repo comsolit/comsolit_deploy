@@ -58,36 +58,6 @@ relevant configuration in .deploy/repo.config:
     tagRegExp = SEMVERRC
 #+END_EXAMPLE
 
-**** on Hosting Server
-
-#+BEGIN_SRC sh
-  #!/bin/sh
-  
-  DATE=$(date +"%F_%H-%M-%S")
-  
-  DEPLOY_ROOT=$(config_get deploy.root)/$BRANCH
-  SHA1=
-  DESCRIBE=
-  CHECKOUTS_DIR=$DEPLOY_ROOT/checkouts
-  CHECKOUT_DIR=${CHECKOUTS_DIR}/${DATE}-${SHA1}-${DESCRIBE}
-  HOOKS=CHECKOUT_DIR/.deploy/hooks
-  
-  mkdir -p $DEPLOY_ROOT/$BRANCH
-  
-  export GIT_WORK_DIR=CHECKOUT_DIR
-  git checkout
-  cd checkout
-  
-  run_hook post-checkout ${DATE} ${SHA1} ${DESCRIBE}
-  
-  # TODO do database migrations here
-
-  switch_symlink "${CHECKOUT_DIR}"
-  
-  run_hook post-switch
-  
-  remove_old_checkouts ${CHECKOUTS_DIR} 4
-#+END_SRC
 
 **** example typo3 deployment hook
 

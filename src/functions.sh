@@ -158,8 +158,14 @@ deploy() {
   mkdir -p "${checkout_dir_absolute}"
   git --work-tree="${checkout_dir_absolute}" checkout --force "${branch}" 2>&1 | grep -vE "^(Already on|Switched to branch) '${branch}'$"
 
+  CHECKOUT_DIR=${checkout_dir_absolute}
+  cd ${CHECKOUT_DIR}
+  run_hook post-checkout ${branch} ${sha1} ${describe}
+
   DEPLOY_ROOT=${deploy_root}
   switch_symlink "${checkout_dir_absolute}"
+
+  run_hook post-switch ${branch} ${sha1} ${describe}
 }
 
 # to be run on the hosting server by the git update hook
