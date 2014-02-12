@@ -150,6 +150,22 @@ testRunHook() {
   assertEquals "washere" "$out"
 }
 
+testDeploy() {
+  local tmpdir
+  local checkout_dir="2014-02-12_14-30-25-c5b140057695c3989c7ab310b61d5e54ae4901b7-"
+
+  unset GIT_DIR
+  cd test_functions/cat_blob.git
+  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+
+  COMSOLIT_TIMESTAMP="1392211825"
+  deploy master "${tmpdir}"
+
+  assertEquals "hello world!!" "$(cat ${tmpdir}/current/catblob)"
+  assertEquals "hello world!!" "$(cat ${tmpdir}/checkouts/${checkout_dir}/catblob)"
+  assertEquals "${checkout_dir}" "$(ls -1 ${tmpdir}/checkouts)"
+}
+
 # suite functions
 oneTimeSetUp()
 {

@@ -127,3 +127,51 @@ run_hook() {
     ${hook_path} $@
   fi
 }
+
+# deploy a branch
+#
+# The function expects to be run by a git update hook so that it
+# can use git to work on the repository
+#
+# Globals:
+#   COMSOLIT_TIMESTAMP: the current unix timestamp
+# Arguments:
+#   branch: branch to be deployed
+#   deploy_root: the path where the branch should be deployed
+# Returns:
+#   None
+deploy() {
+  local branch="$1"
+  local deploy_root="$2"
+  local date=$(date --date=@${COMSOLIT_TIMESTAMP} +"%F_%H-%M-%S" )
+  local checkout_dir_name
+  local checkout_dir_absolute
+  local describe
+  local sha1
+
+  # ignore error, if no tag is in the history
+  describe="$(git describe ${branch} 2>/dev/null || true)"
+  sha1=$(git rev-parse "${branch}")
+  checkout_dir_name="${date}-${sha1}-${describe}"
+  checkout_dir_absolute="${deploy_root}/checkouts/${checkout_dir_name}"
+
+  mkdir -p "${checkout_dir_absolute}"
+  git --work-tree="${checkout_dir_absolute}" checkout --force "${branch}" 2>&1 | grep -vE "^(Already on|Switched to branch) '${branch}'$"
+
+  DEPLOY_ROOT=${deploy_root}
+  switch_symlink "${checkout_dir_absolute}"
+}
+
+# to be run on the hosting server by the git update hook
+#
+# Globals:
+#   None
+# Arguments:
+#   ref: name of the ref being updated
+#   old_object: old object name stored in the ref
+#   new_object: new objectname to be stored in the ref
+# Returns:
+#   None
+on_hosting_server_on_update() {
+  COMSOLIT_TIMESTAMP=$(date +%s)
+}

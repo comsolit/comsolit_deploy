@@ -16,6 +16,9 @@ set -u
 # set shwordsplit for zsh
 [ -n "${ZSH_VERSION:-}" ] && setopt shwordsplit
 
+# CURRENT DIRECTORY
+TH_INITIAL_CURRENT_DIRECTORY=$(pwd)
+
 # my name
 TH_MY_NAME=`basename "$0"`
 
@@ -46,6 +49,7 @@ th_fatal() { echo "test:FATAL $@" >&2; }
 
 th_oneTimeSetUp()
 {
+  cd ${TH_INITIAL_CURRENT_DIRECTORY}
   # load shFlags
   [ -n "${ZSH_VERSION:-}" ] && FLAGS_PARENT=$0
   #. ${TH_SHFLAGS}
