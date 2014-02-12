@@ -7,7 +7,7 @@
 . ../src/functions.sh
 
 testGitConfigGet() {
-  local file=test_config/general
+  local file=test_functions/general
 
   assertEquals "true" $(_comsolit_deploy_get_git_config $file a.bool.truish get bool)
   assertEquals "true" $(_comsolit_deploy_get_git_config $file a.bool.truish get)
@@ -24,7 +24,7 @@ testGitConfigGet() {
 }
 
 testGitConfigGetAll() {
-  local file=test_config/general
+  local file=test_functions/general
 
   assertEquals "hello world
 hello git" \
@@ -32,7 +32,7 @@ hello git" \
 }
 
 testGitCatBlobToTmp() {
-  local git_dir=test_config/cat_blob.git
+  local git_dir=test_functions/cat_blob.git
   local tmpfile
   tmpfile="$(_comsolit_deploy_cat_blob_to_tmp $git_dir "master:catblob")"
 
@@ -42,7 +42,7 @@ testGitCatBlobToTmp() {
 
 testGetConfig() {
   # override global GIT_DIR
-  export GIT_DIR=test_config/cat_blob.git
+  export GIT_DIR=test_functions/cat_blob.git
   _COMSOLIT_DEPLOY_CONFIG_BLOB="master:config"
 
   assertEquals "foo" "$(get_config sec.tion)"
