@@ -181,8 +181,8 @@ testDeployWithHooks() {
   local out
 
   unset GIT_DIR
-  cp -r test_functions/with_hooks.git $tmpdir
-  cd $tmpdir/with_hooks.git
+  cp -r test_functions/deployable.git $tmpdir
+  cd $tmpdir/deployable.git
 
   _COMSOLIT_LOG_INFO=""
   _TEST_RUN_POST_CHECKOUT=__feedback_testDeployWithHooks_post_checkout
@@ -190,14 +190,14 @@ testDeployWithHooks() {
   COMSOLIT_TIMESTAMP="1392211825"
   out=$(deploy master "${tmpdir}")
   assertEquals \
-    "post-checkout master fb458699833884586b31f0e76421386998258c5b 1.0+rc2-1-gfb45869
-post-switch master fb458699833884586b31f0e76421386998258c5b 1.0+rc2-1-gfb45869" \
+    "post-checkout master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint
+post-switch master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint" \
     "${out}"
 }
 
 testOnHostingServerOnPostReceive() {
   local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
-  local sourcegit=$tmpdir/with_config_deploy_root.git
+  local sourcegit=$tmpdir/deployable.git
   local targetgit=$tmpdir/target.git
   local out
 
@@ -205,12 +205,76 @@ testOnHostingServerOnPostReceive() {
   git --git-dir=$targetgit init --bare --quiet
   ln -s $(readlink -f ../src/hosting_server_hook.sh) $targetgit/hooks/post-receive
 
-  cp -r test_functions/with_config_deploy_root.git $tmpdir
+  cp -r test_functions/deployable.git $tmpdir
   git --git-dir=$sourcegit remote add origin $targetgit
-  git --git-dir=$sourcegit push --quiet origin master
 
-  out=$(ls -1 $tmpdir/current/.deploy)
-  assertEquals "config" "${out}"
+  out=$(git --git-dir=$sourcegit push --quiet origin master 2>&1)
+  assertEquals 4 "$(echo "$out"|wc -l)"
+
+  out=$(ls -1 $tmpdir/master/current/.deploy)
+  assertEquals "config
+hooks" "${out}"
+}
+
+testShouldDeploy() {
+  export GIT_DIR=test_functions/deployable.git
+  _COMSOLIT_DEPLOY_CONFIG_BLOB=master:.deploy/config
+
+  should_deploy production
+  assertTrue "production failed" $?
+
+  should_deploy "/my/private/branch"
+  assertTrue "/my/private/branch failed" $?
+
+  should_deploy "/my/private/branch/even/deeper"
+  assertTrue "/my/private/branch failed" $?
+
+  should_deploy master
+  assertFalse "master failed" $?
+
+  should_deploy undefined
+  assertFalse "undefined failed" $?
+}
+
+testOnGitServerOnPostReceive() {
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  local devgit=$tmpdir/deployable.git
+  local sourcegit=$tmpdir/source.git
+  local targetgit=$tmpdir/target.git
+  local out
+
+  mkdir -p $targetgit
+  git --git-dir=$targetgit init --bare --quiet
+  ln -s $(readlink -f ../src/hosting_server_hook.sh) $targetgit/hooks/post-receive
+
+  mkdir -p $sourcegit
+  git --git-dir=$sourcegit init --bare --quiet
+  ln -s $(readlink -f ../src/git_server_hook.sh) $sourcegit/hooks/post-receive
+
+  cp -r test_functions/deployable.git $tmpdir
+  git --git-dir=$devgit remote add origin $sourcegit
+  git --git-dir=$sourcegit remote add origin $targetgit
+
+  git --git-dir=$devgit push --quiet origin master:master
+  assertEquals "" "$(ls -1 $tmpdir|grep master)"
+
+  git --git-dir=$devgit push --tags --quiet
+  git --git-dir=$devgit push --quiet origin master:doesnotexist
+  assertEquals "" "$(ls -1 $tmpdir|grep doesnotexist)"
+
+  git --git-dir=$devgit push --quiet origin master:production 2>/dev/null
+  assertEquals "production" "$(ls -1 $tmpdir|grep production)"
+
+  out=$(ls -1 $tmpdir/production/current/.deploy)
+  assertEquals "config
+hooks" "${out}"
+
+  git --git-dir=$devgit push --quiet origin master:my/private/branch 2>/dev/null
+  assertEquals "branch" "$(ls -1 $tmpdir/my/private|grep branch)"
+
+  out=$(ls -1 $tmpdir/my/private/branch/current/.deploy)
+  assertEquals "config
+hooks" "${out}"
 }
 
 # suite functions

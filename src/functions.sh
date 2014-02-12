@@ -1,5 +1,6 @@
 _COMSOLIT_DEPLOY_GIT=git
 _COMSOLIT_LOG_INFO=true
+_COMSOLIT_DEPLOY_CONFIG_BLOB=HEAD:.deploy/config
 
 log_info() {
   if [ ! -z "$_COMSOLIT_LOG_INFO" ]; then
@@ -128,6 +129,25 @@ run_hook() {
   fi
 }
 
+# whether a branch is configured to be deployed
+#
+# Globals:
+#   COMSOLIT_TIMESTAMP: the current unix timestamp
+# Arguments:
+#   branch: branch to be deployed
+# Returns:
+#   boolean
+should_deploy() {
+  local branch="$1"
+  local branches="$(get_config "branch\..*\.deploy" get-regexp bool)"
+  local regexp
+  branches=$(echo "$branches"|sed -nr 's/^branch.(.*).deploy true$/\1/p')
+  for regexp in "$branches"; do
+    echo "$branch"|grep -E "$regexp" >/dev/null && return 0
+  done
+  return 1
+}
+
 # deploy a branch
 #
 # The function expects to be run by a git update hook so that it
@@ -142,7 +162,7 @@ run_hook() {
 #   None
 deploy() {
   local branch="$1"
-  local deploy_root=$(readlink --canonicalize "$2")
+  local deploy_root=$(readlink --canonicalize-missing "$2")
   local date=$(date --date=@${COMSOLIT_TIMESTAMP} +"%F_%H-%M-%S" )
   local checkout_dir_name
   local checkout_dir_absolute
@@ -173,9 +193,7 @@ deploy() {
 # Globals:
 #   None
 # Arguments:
-#   ref: name of the ref being updated
-#   old_object: old object name stored in the ref
-#   new_object: new objectname to be stored in the ref
+#   None
 # Returns:
 #   None
 on_hosting_server_on_post_receive() {
@@ -187,13 +205,49 @@ on_hosting_server_on_post_receive() {
   local new_object
   COMSOLIT_TIMESTAMP=$(date +%s)
 
-  while read oldrev newrev ref; do
+  while read old_object new_object ref; do
     reftype=$(echo $ref | cut -d/ -f2)
     branch=$(echo $ref | cut -d/ -f3-)
     if [ $reftype = "heads" ]; then
       _COMSOLIT_DEPLOY_CONFIG_BLOB="${ref}:.deploy/config"
       local deploy_root=$(get_config deploy.root)
-      deploy "${branch}" "${deploy_root}"
+      deploy "${branch}" "${deploy_root}/${branch}"
+    fi
+  done
+}
+
+# TODO
+#  git push origin $(git tag -l "*.*" | grep -E "([[:digit:]]+\.)+[[:digit:]]+(\+rc[[:digit:]]+)?$")
+push_tags() {
+  local tags_with_point="$(git tag -l "*.*")"
+  if [ ! -z "$tags_with_point" ]; then
+    git push --quiet origin "$tags_with_point"
+  fi
+}
+
+# to be run on the git server by the git post-receive hook
+#
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+on_git_server_on_post_receive() {
+  local ref
+  local reftype
+  local branch
+  local deploy_root
+  local old_object
+  local new_object
+
+  while read oldrev newrev ref; do
+    reftype=$(echo $ref | cut -d/ -f2)
+    branch=$(echo $ref | cut -d/ -f3-)
+    _COMSOLIT_DEPLOY_CONFIG_BLOB="${ref}:.deploy/config"
+    if should_deploy "${branch}"; then
+      push_tags
+      git push --quiet origin +$ref:$branch
     fi
   done
 }
