@@ -195,6 +195,24 @@ post-switch master fb458699833884586b31f0e76421386998258c5b 1.0+rc2-1-gfb45869" 
     "${out}"
 }
 
+testOnHostingServerOnPostReceive() {
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  local sourcegit=$tmpdir/with_config_deploy_root.git
+  local targetgit=$tmpdir/target.git
+  local out
+
+  mkdir -p $targetgit
+  git --git-dir=$targetgit init --bare --quiet
+  ln -s $(readlink -f ../src/hosting_server_hook.sh) $targetgit/hooks/post-receive
+
+  cp -r test_functions/with_config_deploy_root.git $tmpdir
+  git --git-dir=$sourcegit remote add origin $targetgit
+  git --git-dir=$sourcegit push --quiet origin master
+
+  out=$(ls -1 $tmpdir/current/.deploy)
+  assertEquals "config" "${out}"
+}
+
 # suite functions
 oneTimeSetUp()
 {

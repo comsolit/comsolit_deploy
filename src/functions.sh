@@ -142,7 +142,7 @@ run_hook() {
 #   None
 deploy() {
   local branch="$1"
-  local deploy_root="$2"
+  local deploy_root=$(readlink --canonicalize "$2")
   local date=$(date --date=@${COMSOLIT_TIMESTAMP} +"%F_%H-%M-%S" )
   local checkout_dir_name
   local checkout_dir_absolute
@@ -168,7 +168,7 @@ deploy() {
   run_hook post-switch ${branch} ${sha1} ${describe}
 }
 
-# to be run on the hosting server by the git update hook
+# to be run on the hosting server by the git post-receive hook
 #
 # Globals:
 #   None
@@ -178,6 +178,22 @@ deploy() {
 #   new_object: new objectname to be stored in the ref
 # Returns:
 #   None
-on_hosting_server_on_update() {
+on_hosting_server_on_post_receive() {
+  local ref
+  local reftype
+  local branch
+  local deploy_root
+  local old_object
+  local new_object
   COMSOLIT_TIMESTAMP=$(date +%s)
+
+  while read oldrev newrev ref; do
+    reftype=$(echo $ref | cut -d/ -f2)
+    branch=$(echo $ref | cut -d/ -f3-)
+    if [ $reftype = "heads" ]; then
+      _COMSOLIT_DEPLOY_CONFIG_BLOB="${ref}:.deploy/config"
+      local deploy_root=$(get_config deploy.root)
+      deploy "${branch}" "${deploy_root}"
+    fi
+  done
 }
