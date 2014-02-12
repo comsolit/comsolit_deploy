@@ -151,12 +151,12 @@ testRunHook() {
 }
 
 testDeploy() {
-  local tmpdir
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
   local checkout_dir="2014-02-12_14-30-25-c5b140057695c3989c7ab310b61d5e54ae4901b7-"
 
   unset GIT_DIR
-  cd test_functions/cat_blob.git
-  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  cp -r test_functions/cat_blob.git $tmpdir
+  cd $tmpdir/cat_blob.git
 
   COMSOLIT_TIMESTAMP="1392211825"
   deploy master "${tmpdir}"
@@ -177,12 +177,12 @@ __feedback_testDeployWithHooks_post_switch() {
 }
 
 testDeployWithHooks() {
-  local tmpdir
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
   local out
 
   unset GIT_DIR
-  cd test_functions/with_hooks.git
-  tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  cp -r test_functions/with_hooks.git $tmpdir
+  cd $tmpdir/with_hooks.git
 
   _COMSOLIT_LOG_INFO=""
   _TEST_RUN_POST_CHECKOUT=__feedback_testDeployWithHooks_post_checkout
