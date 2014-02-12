@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -e
+
+if [ $# -ne 2 ]; then
+  cat <<EOF
+USAGE: $0 SSHCONNECT_STRING PATH_ON_SERVER
+
+- init the comsolit_deploy non-bare repo on the server
+- pushes the comsolit_deploy repo to the server
+- init --bare the project repo on the server
+- add symlink from project repo post-receive hook to comsolit_deploy
+EOF
+exit
+fi
+
+sshcon=$1
+serverpath=$2
+
+set -x
+
+ssh-copy-id localhost 2>/dev/null
+
+ssh $sshcon "
+  mkdir -p $serverpath/comsolit_deploy.git
+  cd $serverpath/comsolit_deploy.git
+  git init --quiet
+  git config --local receive.denyCurrentBranch ignore
+"
+
+git remote rm _tmp_ 2>/dev/null || true
+git remote add _tmp_ $sshcon:$serverpath/comsolit_deploy.git
+git push --quiet _tmp_ HEAD
+git remote rm _tmp_
+
+ssh $sshcon "
+  cd $serverpath/comsolit_deploy.git
+  git checkout -f HEAD
+  mkdir -p $serverpath/project.git
+  cd $serverpath/project.git
+  git init --bare --quiet
+  ln -s $serverpath/comsolit_deploy.git/src/hosting_server_hook.sh $serverpath/project.git/hooks/post-receive
+"
+
