@@ -65,19 +65,10 @@ relevant configuration in .deploy/repo.config:
   
   DATE=$(date +"%F_%H-%M-%S")
   
-  run_hook() {
-    hook=$1
-    hook_path=CHECKOUT_DIR/.deploy/hooks/$hook
-    if [-x ${hook_path}];then
-      echo "call hook $hook with arguments $@"
-      ${hook_path} $@
-    fi
-  }
-  
-  DEPLOY_ROOT=config_get deploy.root
+  DEPLOY_ROOT=$(config_get deploy.root)/$BRANCH
   SHA1=
   DESCRIBE=
-  CHECKOUTS_DIR=$DEPLOY_ROOT/checkout
+  CHECKOUTS_DIR=$DEPLOY_ROOT/checkouts
   CHECKOUT_DIR=${CHECKOUTS_DIR}/${DATE}-${SHA1}-${DESCRIBE}
   HOOKS=CHECKOUT_DIR/.deploy/hooks
   
@@ -90,10 +81,8 @@ relevant configuration in .deploy/repo.config:
   run_hook post-checkout ${DATE} ${SHA1} ${DESCRIBE}
   
   # TODO do database migrations here
-  
-  # update current symlink with mv to be atomic
-  ln --symbolic --force --no-dereference "${CHECKOUT_DIR}" "${DEPLOY_ROOT}/current.new"
-  mv "${DEPLOY_ROOT}/current.new" "${DEPLOY_ROOT}/current"
+
+  switch_symlink "${CHECKOUT_DIR}"
   
   run_hook post-switch
   
