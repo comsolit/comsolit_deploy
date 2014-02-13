@@ -19,7 +19,7 @@ serverpath=$2
 
 set -x
 
-ssh-copy-id localhost 2>/dev/null
+ssh-copy-id $sshcon 2>/dev/null
 
 ssh $sshcon "
   mkdir -p $serverpath/comsolit_deploy.git
