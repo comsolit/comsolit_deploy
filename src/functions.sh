@@ -168,6 +168,7 @@ deploy() {
   local checkout_dir_absolute
   local describe
   local sha1
+  local current_directory=$(pwd)
 
   # ignore error, if no tag is in the history
   describe="$(git describe ${branch} 2>/dev/null || true)"
@@ -182,10 +183,15 @@ deploy() {
   cd ${CHECKOUT_DIR}
   run_hook post-checkout ${branch} ${sha1} ${describe}
 
+  # TODO db migration
+
   DEPLOY_ROOT=${deploy_root}
   switch_symlink "${checkout_dir_absolute}"
 
   run_hook post-switch ${branch} ${sha1} ${describe}
+
+  cd ${current_directory}
+  remove_old_checkouts ${deploy_root}/checkouts 4
 }
 
 # to be run on the hosting server by the git post-receive hook

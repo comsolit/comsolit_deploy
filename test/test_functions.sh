@@ -153,17 +153,32 @@ testRunHook() {
 testDeploy() {
   local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
   local checkout_dir="2014-02-12_14-30-25-c5b140057695c3989c7ab310b61d5e54ae4901b7-"
+  local i
 
   unset GIT_DIR
   cp -r test_functions/cat_blob.git $tmpdir
   cd $tmpdir/cat_blob.git
 
   COMSOLIT_TIMESTAMP="1392211825"
-  deploy master "${tmpdir}"
+  deploy master "${tmpdir}/s"
 
-  assertEquals "hello world!!" "$(cat ${tmpdir}/current/catblob)"
-  assertEquals "hello world!!" "$(cat ${tmpdir}/checkouts/${checkout_dir}/catblob)"
-  assertEquals "${checkout_dir}" "$(ls -1 ${tmpdir}/checkouts)"
+  assertEquals "hello world!!" "$(cat ${tmpdir}/s/current/catblob)"
+  assertEquals "hello world!!" "$(cat ${tmpdir}/s/checkouts/${checkout_dir}/catblob)"
+  assertEquals "${checkout_dir}" "$(ls -1 ${tmpdir}/s/checkouts)"
+
+  # test removal of old checkouts
+  for i in $(seq 1392211826 1392211831); do
+    COMSOLIT_TIMESTAMP="${i}"
+    deploy master "${tmpdir}/s"
+
+    [ "$(ls -1 ${tmpdir}/s/checkouts|wc -l)" -lt 5 ]
+    assertTrue $?
+
+    [ "$(ls -1 ${tmpdir}/s/checkouts|wc -l)" -gt 1 ]
+    assertTrue $?
+  done
+
+
 }
 
 __feedback_testDeployWithHooks_post_checkout() {
