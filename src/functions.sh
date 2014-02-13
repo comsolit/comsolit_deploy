@@ -186,7 +186,7 @@ deploy() {
   # TODO db migration
 
   DEPLOY_ROOT=${deploy_root}
-  switch_symlink "${checkout_dir_absolute}"
+  switch_symlink "./checkouts/${checkout_dir_name}"
 
   run_hook post-switch ${branch} ${sha1} ${describe}
 
