@@ -106,7 +106,15 @@ t3lib     -> $GROUP_LINK_TARGET/t3lib
 typo3     -> $GROUP_LINK_TARGET/typo3
 
 **** configuration
+Configuration File
+local.config
+baseUrl="http://www.example.com"
+database=dbname
+host=dbhost
+password=password
+username=user
 
+You need to put this configuration in top (no matter how much levels in top) of the repository root you want to deploy.
 
 /linktargets_versioned
   /typo3
