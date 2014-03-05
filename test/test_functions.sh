@@ -292,6 +292,125 @@ hooks" "${out}"
 hooks" "${out}"
 }
 
+setupGitRepos() {
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  local devgit=$tmpdir/devgit
+  local sourcegit=$tmpdir/source.git
+  local targetgit=$tmpdir/target.git
+
+  unset GIT_DIR
+
+  mkdir -p "${devgit}" "${sourcegit}" "${targetgit}"
+
+  git --git-dir=$sourcegit init --quiet --bare "${sourcegit}"
+  git --git-dir=$targetgit init --quiet --bare "${targetgit}"
+
+  ln -s $(readlink -f ../src/hosting_server_hook.sh) $targetgit/hooks/post-receive
+  ln -s $(readlink -f ../src/git_server_hook.sh) $sourcegit/hooks/post-receive
+
+  cd $devgit && git init --quiet && cd - >/dev/null
+
+  git --git-dir=$devgit/.git remote add origin $sourcegit
+  git --git-dir=$sourcegit remote add origin $targetgit
+
+  echo "${tmpdir}"
+}
+
+copyAndCommit() {
+  unset GIT_DIR
+  local gitrepo=$1
+  local content=$2
+
+  cp -R $content $gitrepo
+  cd $gitrepo
+  git add -A .
+  git commit --quiet -m"COMMITMESSAGE42"
+  cd - >/dev/null
+}
+
+testTagpatternWithoutMatchingTag() {
+  unset GIT_DIR
+
+  local tmpdir="$(setupGitRepos)"
+  local out
+
+  copyAndCommit "$tmpdir/devgit" "test_functions/config_with_tagpatterns/.deploy"
+  git --git-dir $tmpdir/devgit/.git push --quiet origin master
+
+  out=$(git --git-dir $tmpdir/source.git log --oneline)
+  assertTrue "source.git has a commit" $?
+  echo $out | grep COMMITMESSAGE42 >/dev/null
+  assertTrue "source.git has correct commit" $?
+
+  out=$(git --git-dir $tmpdir/target.git log --oneline 2>&1)
+  assertFalse "target.git has no commit" $?
+  assertEquals "fatal: bad default revision 'HEAD'" "$out"
+}
+
+testTagpatternWithSomeOtherTag() {
+  unset GIT_DIR
+
+  local tmpdir="$(setupGitRepos)"
+  local out
+
+  copyAndCommit "$tmpdir/devgit" "test_functions/config_with_tagpatterns/.deploy"
+  git --git-dir $tmpdir/devgit/.git tag --annotate -m"." doesnotmatchpattern
+  git --git-dir $tmpdir/devgit/.git push --quiet --tags origin master
+
+  out=$(git --git-dir $tmpdir/source.git log --oneline)
+  assertTrue "source.git has a commit" $?
+  echo $out | grep COMMITMESSAGE42 >/dev/null
+  assertTrue "source.git has correct commit" $?
+
+  out=$(git --git-dir $tmpdir/source.git tag -l)
+  assertEquals "$out" doesnotmatchpattern
+
+  out=$(git --git-dir $tmpdir/target.git log --oneline 2>&1)
+  assertFalse "target.git has no commit" $?
+  assertEquals "fatal: bad default revision 'HEAD'" "$out"
+}
+
+testTagpatternWithMatchingTag() {
+  unset GIT_DIR
+
+  local tmpdir="$(setupGitRepos)"
+  local out
+
+  copyAndCommit "$tmpdir/devgit" "test_functions/config_with_tagpatterns/.deploy"
+  git --git-dir $tmpdir/devgit/.git tag --annotate -m"." 1.2.3
+  git --git-dir $tmpdir/devgit/.git push --quiet --tags origin master
+
+  out=$(git --git-dir $tmpdir/source.git log --oneline)
+  assertTrue "source.git has a commit" $?
+  echo $out | grep COMMITMESSAGE42 >/dev/null
+  assertTrue "source.git has correct commit" $?
+
+  out=$(git --git-dir $tmpdir/target.git log --oneline)
+  assertTrue "target.git has a commit" $?
+  echo $out | grep COMMITMESSAGE42 >/dev/null
+  assertTrue "target.git has correct commit" $?
+}
+
+testBranchWithoutTagpattern() {
+  unset GIT_DIR
+
+  local tmpdir="$(setupGitRepos)"
+  local out
+
+  copyAndCommit "$tmpdir/devgit" "test_functions/config_with_tagpatterns/.deploy"
+  git --git-dir $tmpdir/devgit/.git push --quiet --tags origin master:development
+
+  out=$(git --git-dir $tmpdir/source.git log --oneline development)
+  assertTrue "source.git has a commit" $?
+  echo $out | grep COMMITMESSAGE42 >/dev/null
+  assertTrue "source.git has correct commit" $?
+
+  out=$(git --git-dir $tmpdir/target.git branch -a | grep development)
+  assertTrue "target.git has development branch" $?
+  assertEquals "* development" "$out"
+}
+
+
 # suite functions
 oneTimeSetUp()
 {

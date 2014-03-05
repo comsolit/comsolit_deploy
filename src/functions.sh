@@ -129,23 +129,61 @@ run_hook() {
   fi
 }
 
+# returns the exact identifier for the config section that matches for a branch
+#
+# configuration sections can be grep -E patterns, so it's not possible to directly
+# map a pushed branch to a section.
+#
+# Globals:
+#   none
+# Arguments:
+#   branch: branch to be deployed
+# Returns:
+#   string, exit 1 if section is not found
+get_config_section_for_branch() {
+  local branch="$1"
+  local branches="$(get_config "branch\..*\.deploy" get-regexp bool)"
+  local regexp
+  branches=$(echo "$branches"|sed -nr 's/^branch.(.*).deploy true$/\1/p')
+  for regexp in $branches; do
+    echo "${branch}" | grep -E "${regexp}" >/dev/null
+    if [ "$?" -eq 0 ] ; then
+      echo "${regexp}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # whether a branch is configured to be deployed
 #
 # Globals:
-#   COMSOLIT_TIMESTAMP: the current unix timestamp
+#   none
 # Arguments:
 #   branch: branch to be deployed
 # Returns:
 #   boolean
 should_deploy() {
   local branch="$1"
-  local branches="$(get_config "branch\..*\.deploy" get-regexp bool)"
-  local regexp
-  branches=$(echo "$branches"|sed -nr 's/^branch.(.*).deploy true$/\1/p')
-  for regexp in "$branches"; do
-    echo "$branch"|grep -E "$regexp" >/dev/null && return 0
-  done
-  return 1
+  $(get_config_section_for_branch "${branch}" >/dev/null) || return 1
+}
+
+# get tagpattern for branch from config
+#
+#
+# Globals:
+#   none
+# Arguments:
+#   branch: branch to be deployed
+# Returns:
+#   None
+get_tagpattern_for_branch() {
+  local branch="$1"
+  local section=$(get_config_section_for_branch "${branch}")
+  if [ "$?" -ne 0 ] ; then
+    return
+  fi
+  get_config "branch.${section}.tagpattern"
 }
 
 # deploy a branch
@@ -217,18 +255,44 @@ on_hosting_server_on_post_receive() {
     if [ $reftype = "heads" ]; then
       _COMSOLIT_DEPLOY_CONFIG_BLOB="${ref}:.deploy/config"
       local deploy_root=$(get_config deploy.root)
+      if [ -z "$deploy_root" ]; then
+        echo "no deploy.root configured!"
+        exit 1
+      fi
+      if [ ! -d "$deploy_root" ]; then
+        echo "deploy.root is not a directory: $deploy_root"
+        exit 1
+      fi
+      if [ ! -w "$deploy_root" ]; then
+        echo "deploy.root is not writable: $deploy_root"
+        exit 1
+      fi
+
       deploy "${branch}" "${deploy_root}/${branch}"
     fi
   done
 }
 
-# TODO
-#  git push origin $(git tag -l "*.*" | grep -E "([[:digit:]]+\.)+[[:digit:]]+(\+rc[[:digit:]]+)?$")
-push_tags() {
-  local tags_with_point="$(git tag -l "*.*")"
-  if [ ! -z "$tags_with_point" ]; then
-    git push --quiet origin "$tags_with_point"
+# push the tag that describes this HEAD
+#
+# Globals:
+#   None
+# Arguments:
+#   tagpattern - tagpattern that must be matched by the tag
+#   branch     - branch that is pushed
+# Returns:
+#   boolean, whether a tag for the given pattern could describe the pushed HEAD
+push_tag() {
+  local tagpattern="$1"
+  local branch="$2"
+  local matching_tags="$(git describe --exact-match ${branch} 2>/dev/null)"
+  local tag_to_push="$(echo $matching_tags | grep -E ${tagpattern})"
+  if [ ! -z "$tag_to_push" ]; then
+    git push --quiet origin "${tag_to_push}"
+    return 0
   fi
+  # no tag available for the given pattern
+  return 1
 }
 
 # to be run on the git server by the git post-receive hook
@@ -246,13 +310,21 @@ on_git_server_on_post_receive() {
   local deploy_root
   local old_object
   local new_object
+  local tagpattern
 
   while read oldrev newrev ref; do
     reftype=$(echo $ref | cut -d/ -f2)
     branch=$(echo $ref | cut -d/ -f3-)
     _COMSOLIT_DEPLOY_CONFIG_BLOB="${ref}:.deploy/config"
     if should_deploy "${branch}"; then
-      push_tags
+      tagpattern=$(get_tagpattern_for_branch "${branch}")
+      if [ ! -z "${tagpattern}" ]; then
+        if ! push_tag "${tagpattern}" "${branch}" ; then
+          # a tag is required but not available. Don't deploy.
+          continue;
+        fi
+      fi
+
       git push --quiet origin +$ref:$branch
     fi
   done

@@ -1,0 +1,10 @@
+[branch "master"]
+	deploy = true
+	tagpattern = ^([[:digit:]]+\\.)+[[:digit:]]+$
+[branch "release"]
+	deploy = true
+	tagpattern = ^([[:digit:]]+\\.)+[[:digit:]]+(\\+rc[[:digit:]]+)?$
+[branch "development"]
+	deploy = true
+[deploy]
+	root = ..
