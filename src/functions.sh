@@ -124,7 +124,7 @@ run_hook() {
   hook=$1
   hook_path=${CHECKOUT_DIR}/.deploy/hooks/$hook
   if [ -x "${hook_path}" ];then
-    log_info "call hook $hook with arguments $@"
+    log_info "call hook $hook with arguments $*"
     ${hook_path} $@
   fi
 }
@@ -209,9 +209,10 @@ deploy() {
   local current_directory=$(pwd)
 
   # ignore error, if no tag is in the history
-  describe="$(git describe ${branch} 2>/dev/null || true)"
+  describe="$(git describe --always ${branch} 2>/dev/null || true)"
+  strict_describe="$(git describe ${branch} 2>/dev/null || true)"
   sha1=$(git rev-parse "${branch}")
-  checkout_dir_name="${date}-${sha1}-${describe}"
+  checkout_dir_name="${date}-${sha1}-${strict_describe}"
   checkout_dir_absolute="${deploy_root}/checkouts/${checkout_dir_name}"
 
   mkdir -p "${checkout_dir_absolute}"
@@ -219,14 +220,14 @@ deploy() {
 
   CHECKOUT_DIR=${checkout_dir_absolute}
   cd ${CHECKOUT_DIR}
-  run_hook post-checkout ${branch} ${sha1} ${describe}
+  run_hook post-checkout "${branch}" "${sha1}" "${describe}" "${strict_describe}"
 
   # TODO db migration
 
   DEPLOY_ROOT=${deploy_root}
   switch_symlink "./checkouts/${checkout_dir_name}"
 
-  run_hook post-switch ${branch} ${sha1} ${describe}
+  run_hook post-switch "${branch}" "${sha1}" "${describe}" "${strict_describe}"
 
   cd ${current_directory}
   remove_old_checkouts ${deploy_root}/checkouts 4

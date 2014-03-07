@@ -205,8 +205,8 @@ testDeployWithHooks() {
   COMSOLIT_TIMESTAMP="1392211825"
   out=$(deploy master "${tmpdir}")
   assertEquals \
-    "post-checkout master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint
-post-switch master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint" \
+    "post-checkout master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint nopoint
+post-switch master 475de32a28e0b3e8ee2316386e6c32ceee664c17 nopoint nopoint" \
     "${out}"
 }
 
