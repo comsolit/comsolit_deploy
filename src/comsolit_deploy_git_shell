@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ $(basename $(pwd)) != "current" ];then
+  echo "please enter the current dir"
+  exit 1
+fi
+
+export GIT_DIR=$(readlink --canonicalize-missing ../../../../project.git)
+export GIT_WORK_TREE=$(readlink --canonicalize-missing $(pwd))
+$SHELL
+
