@@ -1,0 +1,15 @@
+#!/bin/sh
+
+ln -s ../../typo3_src/index.php index.php
+ln -s ../../typo3_src/typo3 typo3
+ln -s ../../typo3_src/t3lib t3lib
+ln -s ../../uploads uploads
+ln -s ../../../medien fileadmin/medien
+
+mkdir typo3temp
+chmod a+w -R typo3temp
+
+chmod a+w -R typo3conf
+chmod a+w -R uploads
+chmod a+w -R fileadmin/_temp_
+chmod a+w -R fileadmin/user_upload
