@@ -25,7 +25,7 @@ ssh $sshcon "
   mkdir -p $serverpath/comsolit_deploy.git
   cd $serverpath/comsolit_deploy.git
   git init --quiet
-  git config --local receive.denyCurrentBranch ignore
+  git config receive.denyCurrentBranch ignore
 "
 
 git remote rm _tmp_ 2>/dev/null || true
