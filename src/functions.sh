@@ -186,6 +186,17 @@ get_tagpattern_for_branch() {
   get_config "branch.${section}.tagpattern"
 }
 
+write_cachedir_tag() {
+  local target="$1"
+
+  cat << 'EOF' > ${target}/CACHEDIR.TAG
+Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by comsolit_deploy.
+# For information about cache directory tags, see:
+#	http://www.brynosaurus.com/cachedir/
+EOF
+}
+
 # deploy a branch
 #
 # The function expects to be run by a git update hook so that it
@@ -207,6 +218,7 @@ deploy() {
   local describe
   local sha1
   local current_directory=$(pwd)
+  local old_checkout=""
 
   # ignore error, if no tag is in the history
   describe="$(git describe --always ${branch} 2>/dev/null || true)"
@@ -214,6 +226,10 @@ deploy() {
   sha1=$(git rev-parse "${branch}")
   checkout_dir_name="${date}-${sha1}-${strict_describe}"
   checkout_dir_absolute="${deploy_root}/checkouts/${checkout_dir_name}"
+
+  if [ -L "${deploy_root}/current" ];then
+    old_checkout=$(readlink --canonicalize-missing ${deploy_root}/current)
+  fi
 
   mkdir -p "${checkout_dir_absolute}"
   git --work-tree="${checkout_dir_absolute}" checkout --force "${branch}" 2>&1 | grep -vE "^(Already on|Switched to branch) '${branch}'$"
@@ -230,6 +246,11 @@ deploy() {
   run_hook post-switch "${branch}" "${sha1}" "${describe}" "${strict_describe}"
 
   cd ${current_directory}
+
+  if [ -n "${old_checkout}" ];then
+    write_cachedir_tag "${old_checkout}"
+  fi
+
   remove_old_checkouts ${deploy_root}/checkouts 10
 }
 

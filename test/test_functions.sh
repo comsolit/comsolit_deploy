@@ -408,6 +408,34 @@ testBranchWithoutTagpattern() {
   assertEquals "* development" "$out"
 }
 
+testWriteCacheDirTag() {
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+  write_cachedir_tag "${tmpdir}"
+
+  assertEquals "CACHEDIR.TAG" "$(ls -1 --almost-all ${tmpdir})"
+  assertEquals "Signature: 8a477f597d28d172789f06886806bc55" "$(head -n 1 ${tmpdir}/CACHEDIR.TAG)"
+  rm "${tmpdir}/CACHEDIR.TAG"
+  rmdir "${tmpdir}"
+}
+
+testDeployWritesCacheDirTag() {
+  local tmpdir=$(mktemp --directory --tmpdir=${SHUNIT_TMPDIR})
+
+  unset GIT_DIR
+  cp -r test_functions/cat_blob.git $tmpdir
+  cd $tmpdir/cat_blob.git
+
+  COMSOLIT_TIMESTAMP="1392211825"
+  deploy master "${tmpdir}/s"
+  local old_checkout=$(readlink --canonicalize-missing ${tmpdir}/s/current)
+  COMSOLIT_TIMESTAMP="1392211826"
+  deploy master "${tmpdir}/s"
+
+  assertTrue "CACHEDIR.TAG exists in old checkout: $(ls -1l ${old_checkout})" 'test -r "${old_checkout}/CACHEDIR.TAG"'
+  assertFalse "No CACHEDIR.TAG in current" 'test -r "${tmpdir}/s/current/CACHEDIR.TAG"'
+  assertEquals "CACHEDIR.TAG contains correct signature" "Signature: 8a477f597d28d172789f06886806bc55" "$(head -n 1 ${old_checkout}/CACHEDIR.TAG)"
+}
+
 
 # suite functions
 oneTimeSetUp()
