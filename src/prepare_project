@@ -1,0 +1,94 @@
+#!/bin/sh
+
+set -e
+
+GIT_ROOT=$(git rev-parse --show-toplevel)
+echo $GIT_ROOT
+
+echo -n "Prepare git project for deployment: '${GIT_ROOT}' (y/n)? "
+read answer
+if echo "$answer" | grep -iq "^y" ;then
+    echo "writing deployment config to ${GIT_ROOT}/.deploy"
+else
+    exit 0
+fi
+
+mkdir -p ${GIT_ROOT}/.deploy/hooks
+
+cat << 'EOF' > ${GIT_ROOT}/.deploy/config
+[branch "master"]
+# The master branch requires (annotated!) semver git tags
+# e.g. 1.3 or 1.5.7 or 1.2.3.4.5.6.7.8
+        deploy = true
+        tagpattern = ^([[:digit:]]+\\.)+[[:digit:]]+$
+
+[branch "release"]
+# The release branch requires (annotated!) git tags like
+# master but can have a +rc0 suffix (or any other number
+# than 0)
+        deploy = true
+        tagpattern = ^([[:digit:]]+\\.)+[[:digit:]]+(\\+rc[[:digit:]]+)?$
+
+[branch "dev"]
+# The dev branch does not need any tag.
+        deploy = true
+
+[deploy]
+# replace the root setting with the deploy path on the webserver
+#        root = /srv/vhosts/myproject/target
+EOF
+
+cat << 'EOF' > ${GIT_ROOT}/.deploy/hooks/post-checkout
+#!/bin/sh
+
+set -e
+
+# this hook script is run for every deployed version
+# just before the symlink is switched
+# don't forget to chmod a+x it!
+
+hookname="$1"         # "post-checkout"
+branch="$2"           # e.g. master, release, dev, ...
+sha1="$3"             # the git commit id
+describe="$4"         # the result of git describe
+strict_describe="$5"  # the tagged version or empty
+
+# this is useful to show the version, branch and git commit
+# in the frontend:
+# echo "${describe}" >__version.deployinfo
+# echo "${branch}" >__branch.deployinfo
+# echo "${sha1}" >__commit.deployinfo
+
+# prepare a folder to store user uploads if it doesn't exist yet
+# mkdir -p -m 0777 ../../uploadfiles
+
+# link the uploadfiles folder into the checkout
+# ln -s ../../uploadfiles
+
+# link a symfony parameters file to the correct place
+# ln -s ../../../../parameters.yml app/config
+
+# prepare symfony writable folders
+# mkdir -m0777 -p app/cache app/logs app/profiler
+
+# warmup symfony cache
+# SYMFONY_ENV=prod app/console cache:warmup
+# chmod a+w -R app/cache
+EOF
+
+cat << 'EOF' > ${GIT_ROOT}/.deploy/hooks/post-switch
+#!/bin/sh
+
+set -e
+
+# this hook is run after(!) the symlink is switched to this
+# checkout. We've not yet found a use for it
+# don't forget to chmod a+x it!
+
+hookname="$1"         # "post-checkout"
+branch="$2"           # e.g. master, release, dev, ...
+sha1="$3"             # the git commit id
+describe="$4"         # the result of git describe
+strict_describe="$5"  # the tagged version or empty
+
+EOF
