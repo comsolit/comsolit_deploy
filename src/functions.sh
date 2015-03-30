@@ -230,7 +230,7 @@ deploy() {
   run_hook post-switch "${branch}" "${sha1}" "${describe}" "${strict_describe}"
 
   cd ${current_directory}
-  remove_old_checkouts ${deploy_root}/checkouts 4
+  remove_old_checkouts ${deploy_root}/checkouts 10
 }
 
 # to be run on the hosting server by the git post-receive hook

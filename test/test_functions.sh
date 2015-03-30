@@ -162,23 +162,21 @@ testDeploy() {
   COMSOLIT_TIMESTAMP="1392211825"
   deploy master "${tmpdir}/s"
 
-  assertEquals "hello world!!" "$(cat ${tmpdir}/s/current/catblob)"
-  assertEquals "hello world!!" "$(cat ${tmpdir}/s/checkouts/${checkout_dir}/catblob)"
-  assertEquals "${checkout_dir}" "$(ls -1 ${tmpdir}/s/checkouts)"
+  assertEquals "file under current" "hello world!!" "$(cat ${tmpdir}/s/current/catblob)"
+  assertEquals "file under checkouts" "hello world!!" "$(cat ${tmpdir}/s/checkouts/${checkout_dir}/catblob)"
+  assertEquals "exactly one checkout dir" "${checkout_dir}" "$(ls -1 ${tmpdir}/s/checkouts)"
 
   # test removal of old checkouts
-  for i in $(seq 1392211826 1392211831); do
+  for i in $(seq 1392211826 1392211841); do
     COMSOLIT_TIMESTAMP="${i}"
     deploy master "${tmpdir}/s"
 
-    [ "$(ls -1 ${tmpdir}/s/checkouts|wc -l)" -lt 5 ]
-    assertTrue $?
+    [ "$(ls -1 ${tmpdir}/s/checkouts|wc -l)" -lt 11 ]
+    assertTrue "less than 5 checkouts created" $?
 
     [ "$(ls -1 ${tmpdir}/s/checkouts|wc -l)" -gt 1 ]
-    assertTrue $?
+    assertTrue "more than 1 checkout created" $?
   done
-
-
 }
 
 __feedback_testDeployWithHooks_post_checkout() {
