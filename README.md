@@ -19,8 +19,8 @@ version.
 
 2. Prepare the server
   1. Make sure you can ssh to the server
-  2. run `src/initial\_setup $SSHCONNECT\_STRING $PATH\_ON\_SERVER`
-     * SSHCONNECT\_STRING is what you'd use when connecting with ssh.
+  2. run `src/initial_setup $SSHCONNECT_STRING $PATH_ON_SERVER`
+     * SSHCONNECT_STRING is what you'd use when connecting with ssh.
 
        (Edit your `~/.ssh/config` to set a port other then 22, see man ssh_config.)
      * PATH_ON_SERVER is the same as the deploy.root setting in .deploy/config.
@@ -39,6 +39,14 @@ git push --tags $REMOTE 0.1+rc0^0:release
 ```
 
 Master only accepts version numbers without the '+rcX' suffix.
+
+# TODO
+
+* make it possible to use sudo to do the deployment
+* make it configurable how many checkouts are kept
+* provide a 'maintenance site' and scripts to turn it on or off
+* package https://github.com/etsy/mod_realdoc for debian and use it
+* make the script smarter so it doesn't need the deploy.root setting
 
 # other deployment tools
 
