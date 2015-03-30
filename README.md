@@ -24,6 +24,9 @@ version.
 
        (Edit your `~/.ssh/config` to set a port other then 22, see man ssh_config.)
      * PATH_ON_SERVER is the same as the deploy.root setting in .deploy/config.
+  3. add the webserver repo as a git remote:
+
+     `git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git`
 
 That's all. Now try to push anything in the dev branch:
 
