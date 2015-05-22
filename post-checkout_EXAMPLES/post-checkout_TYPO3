@@ -1,15 +1,23 @@
 #!/bin/sh
 
+branch=$2
+
+rm -f fileadmin/website_files/ts/domain.ts
+rm -f typo3conf/LocalConfiguration.php
+rm -f typo3conf/PackageStates.php
+
 ln -s ../../typo3_src/index.php index.php
 ln -s ../../typo3_src/typo3 typo3
-ln -s ../../typo3_src/t3lib t3lib
 ln -s ../../uploads uploads
 ln -s ../../../medien fileadmin/medien
 
-mkdir typo3temp
-chmod a+w -R typo3temp
+cp -f .deploy/${branch}/LocalConfiguration.php typo3conf/LocalConfiguration.php
+cp -f .deploy/${branch}/PackageStates.php typo3conf/PackageStates.php
+cp -f .deploy/${branch}/domain.ts fileadmin/website_files/ts/domain.ts
+cp -f .deploy/${branch}/.htaccess .htaccess
+cp -f .deploy/${branch}/.htpasswd .htpasswd
 
-chmod a+w -R typo3conf
-chmod a+w -R uploads
-chmod a+w -R fileadmin/_temp_
-chmod a+w -R fileadmin/user_upload
+mkdir typo3temp
+mkdir typo3temp/_processed_
+
+chown www-data:www-data -R .

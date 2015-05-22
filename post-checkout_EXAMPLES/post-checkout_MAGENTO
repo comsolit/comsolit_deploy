@@ -1,0 +1,22 @@
+#!/bin/sh
+
+branch=$2
+
+rm app/etc/local.xml
+
+mkdir var/cache
+mkdir var/cache
+mkdir var/session
+mkdir var/locks
+mkdir var/report
+mkdir tmp
+
+cp -f .deploy/${branch}/local.xml app/etc/local.xml
+cp -f .deploy/${branch}/.htpasswd .htpasswd
+cp -f .deploy/${branch}/.htaccess .htaccess
+
+ln -s ../../media media
+
+chmod 755 -Rf var/
+
+chown www-data:www-data -R .
