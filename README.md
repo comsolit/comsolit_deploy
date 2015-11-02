@@ -15,18 +15,20 @@ version.
   2. cd into the git project that you want to deploy
   3. run the `src/prepare_project` from this repo
   4. edit the created files under `.deploy/`
-  5. make sure to set the deploy.root setting in `.deploy/config`
+  5. make sure to set the deploy.root setting in `.deploy/config` for example root = /srv/vhosts/website/target
+  6. if you don't use tags delete the tags config lines
 
 2. Prepare the server
-  1. Make sure you can ssh to the server
+  1. Make sure you can ssh to the server  
   2. run `src/initial_setup $SSHCONNECT_STRING $PATH_ON_SERVER`
-     * SSHCONNECT_STRING is what you'd use when connecting with ssh.
-
+     * SSHCONNECT_STRING is what you'd use when connecting with ssh. 
        (Edit your `~/.ssh/config` to set a port other then 22, see man ssh_config.)
-     * PATH_ON_SERVER is the same as the deploy.root setting in .deploy/config.
+     * if this doesn't work, clone and checkout the comsolit_deploy Repository direct from github to a folder comsolit_deploy.git      
+     * PATH_ON_SERVER is the same as the deploy.root setting /srv/vhosts/website/ exept the /target folder     
   3. add the webserver repo as a git remote:
-
-     `git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git`
+     `git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git`     
+  4. add your hookscript "post-checkout" for example in .deploy/hooks/  
+  5. make sure the hookscript is executable
 
 That's all. Now try to push anything in the dev branch:
 
@@ -50,35 +52,3 @@ Master only accepts version numbers without the '+rcX' suffix.
 * provide a 'maintenance site' and scripts to turn it on or off
 * package https://github.com/etsy/mod_realdoc for debian and use it
 * make the script smarter so it doesn't need the deploy.root setting
-
-# other deployment tools
-
-## yadt-project from immobilienscout 24
-
-* http://yadt-project.org
-* many levels to big
-
-## https://github.com/git-deploy/git-deploy
-
-* booking.com
-* perl
-* seltsamer workflow, ausgehend von einem zentralen staging server
-
-## giddyup
-
-* https://github.com/mpalmer/giddyup web application deployment with "git push"
-* (shell)
-
-## EugeneKay
-
-* https://github.com/EugeneKay/scripts/blob/master/bash/git-deploy-hook.sh
-* some nice preliminary checks for binaries
-
-## [git-deploy](https://github.com/anchor/git-deploy) by anchor
-
-* shell, python
-
-# glossary
-
-*  [DTAP](http://en.wikipedia.org/wiki/Development,_testing,_acceptance_and_production)
-   is short for Development, Testing, Acceptance and Production
