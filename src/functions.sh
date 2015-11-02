@@ -251,7 +251,7 @@ deploy() {
     write_cachedir_tag "${old_checkout}"
   fi
 
-  remove_old_checkouts ${deploy_root}/checkouts 10
+  remove_old_checkouts ${deploy_root}/checkouts 4
 }
 
 # to be run on the hosting server by the git post-receive hook
