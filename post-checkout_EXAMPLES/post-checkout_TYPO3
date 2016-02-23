@@ -1,23 +1,59 @@
-#!/bin/sh
+#!/bin/bash
 
 branch=$2
 
+#################
+# SETUP PROJECT #
+#################
+rm .htaccess
+rm -fR uploads
+rm -fR fileadmin/medien
 rm -f fileadmin/website_files/ts/domain.ts
 rm -f typo3conf/LocalConfiguration.php
 rm -f typo3conf/PackageStates.php
-
-ln -s ../../typo3_src/index.php index.php
-ln -s ../../typo3_src/typo3 typo3
-ln -s ../../uploads uploads
+rm -fr typo3temp
+if [ -d ../../typo3temp ];then
+    rm -fr ../../typo3temp/*
+else
+    mkdir ../../typo3temp
+fi
+mkdir ../../typo3temp/_processed_
+ln -s ../../typo3temp
+ln -s ../../uploads
 ln -s ../../../medien fileadmin/medien
-
-cp -f .deploy/${branch}/LocalConfiguration.php typo3conf/LocalConfiguration.php
-cp -f .deploy/${branch}/PackageStates.php typo3conf/PackageStates.php
-cp -f .deploy/${branch}/domain.ts fileadmin/website_files/ts/domain.ts
-cp -f .deploy/${branch}/.htaccess .htaccess
-cp -f .deploy/${branch}/.htpasswd .htpasswd
-
-mkdir typo3temp
-mkdir typo3temp/_processed_
-
+chmod a+x -R ../../typo3temp
+chown -R www-data:www-data ../../typo3temp
+cp -f .deploy/${branch}/LocalConfiguration.php typo3conf/
+cp -f .deploy/${branch}/PackageStates.php typo3conf/
+cp -f .deploy/${branch}/domain.ts fileadmin/website_files/eovital/ts/
+cp -f .deploy/${branch}/.htaccess .
+if [ -f .deploy/${branch}/.htpasswd ];then
+    cp -f .deploy/${branch}/.htpasswd .
+else
+    echo ".htpasswd does not exsist in ${branch}."
+fi
 chown www-data:www-data -R .
+
+########################################
+# CLEAR DATABASE TYPO3 CACHE           #
+#  -typo3_console extension required   #
+########################################
+echo "flushing cache..."
+./typo3cms cache:flush
+chown www-data:www-data -R ../../typo3temp
+
+#########################################
+# CLEAR DATABASE TYPO3 CACHE            #
+#  -no typo3_cnosole extension required #
+#########################################
+#TABLES_TO_TRUNCATE=( "cf_cache_hash" "cf_cache_hash_tags" "cf_cache_news_category" "cf_cache_news_category_tags" "cf_cache_pages" )
+#
+#DB_NAME=`cat .deploy/${branch}/LocalConfiguration.php | grep -w "database" | cut -d \' -f 4`
+#DB_USER=`cat .deploy/${branch}/LocalConfiguration.php | grep -w "username" | cut -d \' -f 4`
+#DB_PASSWORD=`cat .deploy/${branch}/LocalConfiguration.php | grep -w "password" | cut -d \' -f 4`
+#
+#for TABLE in "${TABLES_TO_TRUNCATE[@]}"
+#do
+#   mysql -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} -e "TRUNCATE TABLE "${DB_NAME}"."${TABLE}
+#   echo "TRUNCATE TABLE "${TABLE}
+#done
