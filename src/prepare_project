@@ -63,7 +63,6 @@ set -e
 
 # this hook script is run for every deployed version
 # just before the symlink is switched
-# don't forget to chmod a+x it!
 
 hookname="$1"         # "post-checkout"
 branch="$2"           # e.g. master, release, dev, ...
@@ -101,7 +100,6 @@ set -e
 
 # this hook is run after(!) the symlink is switched to this
 # checkout. We've not yet found a use for it
-# don't forget to chmod a+x it!
 
 hookname="$1"         # "post-checkout"
 branch="$2"           # e.g. master, release, dev, ...
@@ -110,3 +108,6 @@ describe="$4"         # the result of git describe
 strict_describe="$5"  # the tagged version or empty
 
 EOF
+
+chmod a+x ${GIT_ROOT}/.deploy/hooks/post-checkout
+chmod a+x ${GIT_ROOT}/.deploy/hooks/post-switch
