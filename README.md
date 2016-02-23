@@ -1,4 +1,4 @@
-# Introduction
+rst# Introduction
 
 This is a no-frills, minimal deployment script. It's written in shell script
 thus the only requirement on the server side is git (>= 1.7).
