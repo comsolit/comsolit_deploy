@@ -32,10 +32,31 @@ Getting started
 
    *  create an own host directory for maintenance page e.g.
 
-::
+    ::
 
-  <Directory /srv/vhosts/eovital/target/dev/maintenance>
-                AllowOverride all
-                Require all granted
-                Options -Indexes +FollowSymlinks
-  </Directory>
+          <Directory /srv/vhosts/website/target/dev/maintenance>
+               AllowOverride all
+               Require all granted
+               Options -Indexes +FollowSymlinks
+          </Directory>
+
+   * add an alias and conditions to redirect to a route with your alias.
+
+    ::
+
+        <VirtualHost *:80>
+            Alias /wartung /srv/vhosts/website/target/dev/maintenance
+            RewriteEngine On
+            RewriteCond %{REQUEST_URI} !^/wartung
+            RewriteCond /srv/vhosts/website/target/dev/.maintenance -f
+            RewriteRule ^/(.*) /wartung [L,R=307]**
+
+            ServerAlias website.ch
+            ServerName website.ch
+            DocumentRoot /srv/vhosts/website/target/dev/current
+            <Directory /srv/vhosts/website/target/dev/current>
+                    AllowOverride all
+                    Options -Indexes +FollowSymlinks
+                    Require all granted
+            </Directory>
+        </VirtualHost>
