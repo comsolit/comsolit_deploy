@@ -129,6 +129,51 @@ run_hook() {
   fi
 }
 
+# enables maintenance page with linking "maintenance" folder outside of project and
+# creating a ".maintenance" file which is given for a condition in apache config.
+#
+# Globals:
+#   None
+# Arguments:
+#   deploy_root: root to be deployed
+# Returns:
+#   None
+enable_maintenance() {
+  local deploy_root="$1"
+  local maintenance_path=${CHECKOUT_DIR}/.deploy/maintenance
+  if [ ! -d ${maintenance_path} ] && [ ! -s ${maintenance_path} ];then
+    log_info "maintenance folder is not in your .deploy directory or is empty."
+  fi
+  if [ ! -h ${deploy_root}/maintenance ];then
+    ln -s ${maintenance_path} ${deploy_root}/maintenance
+  fi
+  if [ -f ${maintenance_path}/.htaccess ];then
+    mv ${deploy_root}/maintenance/.htaccess ${deploy_root}/maintenance/.htaccess.disabled
+    else
+    log_info ".htaccess was not found in ${maintenance_path} or is not a regular file."
+  fi
+  chown www-data:www-data -R ${deploy_root}/maintenance
+  touch ${deploy_root}/.maintenance
+}
+
+# disables maintenance page with removing ".maintenance" file and enabling .htaccess for redirecting
+#
+# Globals:
+#  None
+# Arguments:
+#  deploy_root: root to be deployed
+# Returns:
+#   None
+disable_maintenance() {
+  local deploy_root="$1"
+  if [ ${deploy_root}/.maintenance ];then
+   rm ${deploy_root}/.maintenance
+  fi
+  if [ -h ${deploy_root}/maintenance ];then
+    mv ${deploy_root}/maintenance/.htaccess.disabled ${deploy_root}/maintenance/.htaccess
+  fi
+}
+
 # returns the exact identifier for the config section that matches for a branch
 #
 # configuration sections can be grep -E patterns, so it's not possible to directly
@@ -236,6 +281,7 @@ deploy() {
 
   CHECKOUT_DIR=${checkout_dir_absolute}
   cd ${CHECKOUT_DIR}
+  enable_maintenance ${deploy_root}
   run_hook post-checkout "${branch}" "${sha1}" "${describe}" "${strict_describe}"
 
   # TODO db migration
@@ -244,6 +290,7 @@ deploy() {
   switch_symlink "./checkouts/${checkout_dir_name}"
 
   run_hook post-switch "${branch}" "${sha1}" "${describe}" "${strict_describe}"
+  disable_maintenance ${deploy_root}
 
   cd ${current_directory}
 
