@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -27,7 +27,8 @@ ssh $sshcon "
   git init --quiet
   git config receive.denyCurrentBranch ignore
 "
-
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $DIR
 git remote rm _tmp_ 2>/dev/null || true
 git remote add _tmp_ $sshcon:$serverpath/comsolit_deploy.git
 git push --quiet _tmp_ HEAD
