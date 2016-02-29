@@ -144,9 +144,8 @@ enable_maintenance() {
   if [ ! -d ${maintenance_path} ] && [ ! -s ${maintenance_path} ];then
     log_info "maintenance folder is not in your .deploy directory or is empty."
   fi
-  if [ ! -h ${deploy_root}/maintenance ];then
-    ln -s ${maintenance_path} ${deploy_root}/maintenance
-  fi
+    rm ${deploy_root}/maintenance
+    cp ${maintenance_path} ${deploy_root}/maintenance
   if [ -f ${maintenance_path}/.htaccess ];then
     mv ${deploy_root}/maintenance/.htaccess ${deploy_root}/maintenance/.htaccess.disabled
     else
