@@ -10,27 +10,29 @@ Getting started
 ===============
 **1. Prepare your git repository**
 
-    * clone this repo.
-    * cd into the git project that you want to deploy.
-    * run the comsolit_deploy/src/prepare_project from this repo.
-    * edit the created files in your repo under .deploy/
-    * create folders in .deploy/ with names of the branches you want to push e.g. "dev" or "master"
-    * make sure to set the [deploy].root setting in .deploy/config e.g. root = /srv/vhosts/website/target
-    * if you don't use tags delete the tags config lines
+* clone this repo.
+* cd into the git project that you want to deploy.
+* run the comsolit_deploy/src/prepare_project from this repo.
+* edit the created files in your repo under .deploy/
+* create folders in .deploy/ with names of the branches you want to push e.g. "dev" or "master"
+* make sure to set the [deploy].root setting in .deploy/config e.g. root = /srv/vhosts/website/target
+* if you don't use tags delete the tags config lines
 
 **2. Prepare the server**
 
-    * Make sure you can ssh to the server
-    * run comsolit_deploy/src/initial_setup $SSHCONNECT_STRING $PATH_ON_SERVER
-        - SSHCONNECT_STRING is what you'd use when connecting with ssh. (Edit your ~/.ssh/config to set a port other then 22, see man ssh_config.)
-        - if this doesn't work, clone and checkout the comsolit_deploy Repository direct from github to a folder comsolit_deploy.git
-    * add the webserver repo as a git remote: git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git
-    * add your hookscript "post-checkout" for example in .deploy/hooks/
-    * make sure the hookscript is executable
+* Make sure you can ssh to the server
+* run comsolit_deploy/src/initial_setup $SSHCONNECT_STRING $PATH_ON_SERVER
+   - run this script with absolute path!!
+   - SSHCONNECT_STRING is what you'd use when connecting with ssh. (Edit your ~/.ssh/config to set a port other then 22, see man ssh_config.)
+   - if this doesn't work, clone and checkout the comsolit_deploy Repository direct from github to a folder comsolit_deploy.git
+   - if initial_setup is executed with an relative path e.g: ../comsolit_deploy/src/initial_setup from another git repo, the repo with the current path will be pushed
+* add the webserver repo as a git remote: git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git
+* add your hookscript "post-checkout" for example in .deploy/hooks/
+* make sure the hookscript is executable
 
 **3. Prepare your server configuration for maintenance page (optional)**
 
-   *  create an own host directory for maintenance page e.g.
+*  create an own host directory for maintenance page e.g.
 
     ::
 
@@ -40,7 +42,7 @@ Getting started
                Options -Indexes +FollowSymlinks
           </Directory>
 
-   * add an alias and conditions to redirect to a route with your alias.
+* add an alias and conditions to redirect to a route with your alias.
 
     ::
 
