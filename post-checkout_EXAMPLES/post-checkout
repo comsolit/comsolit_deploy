@@ -1,0 +1,14 @@
+# this hook script is run for every deployed version
+# just before the symlink is switched
+
+hookname="$1"         # "post-checkout"
+branch="$2"           # e.g. master, release, dev, ...
+sha1="$3"             # the git commit id
+describe="$4"         # the result of git describe
+strict_describe="$5"  # the tagged version or empty
+
+# this is useful to show the version, branch and git commit
+# in the frontend:
+# echo "${describe}" >__version.deployinfo
+# echo "${branch}" >__branch.deployinfo
+# echo "${sha1}" >__commit.deployinfo

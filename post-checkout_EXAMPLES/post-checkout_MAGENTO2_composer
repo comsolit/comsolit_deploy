@@ -1,0 +1,60 @@
+#!/bin/sh
+
+###############################################
+##              MAGENTO2 DEPLOY              ##
+###############################################
+
+branch=$2
+
+echo ">> applying env.php and .htaccess files"
+# configs and htaccess files
+rm -f app/etc/env.php
+cp -f .deploy/${branch}/env.php app/etc/env.php
+cp -f .deploy/${branch}/.htaccess .htaccess
+
+echo ">> checking for .htpasswd"
+# check for htpasswd
+if [ -f .deploy/${branch}/.htpasswd ]
+then
+    cp -f .deploy/${branch}/.htpasswd .htpasswd
+else
+    echo ">> .htpasswd does not exist in ${branch}"
+fi
+
+echo ">> setting symlinks"
+# symlinks
+rm -rf pub/media
+ln -s ../../../media pub/media
+
+echo ">> fixing permissions"
+# fix permissions prior to generation
+chmod a+x bin/magento
+chown www-data:www-data -R .
+
+echo ">> checking for db updates"
+# apply any outstanding updates
+su www-data -s /bin/bash -c "bin/magento setup:upgrade"
+
+echo ">> cleaning & flushing old cache files"
+# clean old cache files
+su www-data -s /bin/bash -c "bin/magento cache:clean"
+# flush old cache files
+su www-data -s /bin/bash -c "bin/magento cache:flush"
+
+echo ">> reindexing products"
+# reindex data
+su www-data -s /bin/bash -c "bin/magento indexer:reindex"
+
+echo ">> creating static content"
+# regenerate the static files - is done when changing deployment mode
+su www-data -s /bin/bash -c "bin/magento setup:static-content:deploy de_DE en_US"
+
+# finally chown all files to make sure
+chown www-data:www-data -R .
+
+echo ">> post-checkout done"
+
+# the following should not be needed any longer
+# echo ">> setting mode to production"
+# change to production mode to avoid speed issues
+# su www-data -s /bin/bash -c "bin/magento deploy:mode:set production"

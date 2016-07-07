@@ -1,0 +1,21 @@
+#!/bin/sh
+
+hookname="$1"
+branch="$2"
+sha1="$3"
+describe="$4"
+strict_describe="$5"
+
+echo "${describe}" >__version.deployinfo
+echo "${branch}" >__branch.deployinfo
+echo "${sha1}" >__commit.deployinfo
+
+mkdir -p -m 0777 ../../userfiles ../../dead_cronjob_switch_dir
+ln -s ../../userfiles
+ln -s ../../../dead_cronjob_switch_dir app
+ln -s ../../../../parameters.yml app/config
+
+mkdir -m0777 -p app/cache app/logs app/profiler
+
+SYMFONY_ENV=prod app/console cache:warmup
+chmod a+w -R app/cache

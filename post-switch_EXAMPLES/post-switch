@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+# this hook is run after(!) the symlink is switched to this
+# checkout. We've not yet found a use for it
+# don't forget to chmod a+x it!
+
+hookname="$1"         # "post-checkout"
+branch="$2"           # e.g. master, release, dev, ...
+sha1="$3"             # the git commit id
+describe="$4"         # the result of git describe
+strict_describe="$5"  # the tagged version or empty
+

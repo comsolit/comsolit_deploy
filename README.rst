@@ -27,7 +27,9 @@ Getting started
    - if this doesn't work, clone and checkout the comsolit_deploy Repository direct from github to a folder comsolit_deploy.git
    - if initial_setup is executed with an relative path e.g: ../comsolit_deploy/src/initial_setup from another git repo, the repo with the current path will be pushed
 * add the webserver repo as a git remote: git remote add $NAME ssh://$SSHCONNECT_STRING/$PATH_ON_SERVER/project.git
-* add your hookscript "post-checkout" for example in .deploy/hooks/
+* add your hookscripts "post-checkout" and "post-switch" for example in .deploy/hooks/
+   - hookscripts are just shell-scripts and you have some variables like branchname ect.
+   - there are a few examples in this package
 * make sure the hookscript is executable
 
 **3. Prepare your server configuration for maintenance page (optional)**
