@@ -155,7 +155,6 @@ enable_maintenance() {
     else
     log_info ".htaccess was not found in ${maintenance_path} or is not a regular file."
   fi
-  chown www-data:www-data -R ${deploy_root}/maintenance
   touch ${deploy_root}/.maintenance
 }
 
