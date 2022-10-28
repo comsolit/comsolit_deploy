@@ -1,3 +1,6 @@
+**THIS REPO IS UNMAINTAINED / A NEW MAINTAINER IS NEEDED**
+=================
+
 Introduction
 ============
 This is a no-frills, minimal deployment script. It's written in shell script. The only requirement on the server side is git *(>= 1.7).*
